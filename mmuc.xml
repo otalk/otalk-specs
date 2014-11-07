@@ -1,0 +1,130 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE xep SYSTEM 'xep.dtd' [
+  <!ENTITY % ents SYSTEM 'xep.ent'>
+%ents;
+]>
+<?xml-stylesheet type='text/xsl' href='xep.xsl'?>
+<xep>
+<header>
+  <title>Multimedia MUC</title>
+  <abstract>This specification defines how a Multi-User Chat (MUC) room can act as a multiparty signalling context (also known as a "conference focus") for Jingle multimedia sessions.</abstract>
+  &LEGALNOTICE;
+  <number>xxxx</number>
+  <status>ProtoXEP</status>
+  <type>Standards Track</type>
+  <sig>Standards</sig>
+  <approver>Council</approver>
+  <dependencies>
+    <spec>XEP-0045</spec>
+    <spec>XEP-0166</spec>
+  </dependencies>
+  <supersedes/>
+  <supersededby/>
+  <shortname>mmuc</shortname>
+  &stpeter;
+  &fippo;
+  <revision>
+    <version>0.0.1</version>
+    <date>2014-09-03</date>
+    <initials>psa/ph</initials>
+    <remark><p>First draft.</p></remark>
+  </revision>
+</header>
+<section1 topic='Introduction' anchor='intro'>
+  <p>The Jingle extensions to XMPP provide a method for managing a multimedia session (e.g., a voice and video call) between two participants. However, by itself Jingle does not support multiparty signaling. This document describes a way to use a groupchat room as a multiparty communications context (also known as a "conference focus") for Jingle signaling and related functionality.</p>
+  <p>In particular, this specification was developed with the following goals in mind:</p>
+  <ul>
+    <li>Enable a room to function as a conference focus by initiating media sessions with participants via &xep0166;.</li>
+    <li>Enable a room to coordinate with a media bridge to provision channels (RTP/RTCP port pairs) for video traffic via &xep0166;.</li>
+    <li>Enable a room to advertise a participant's media streams via in-room presence so that other participants can associate any given stream with the sending participant.</li>
+    <li>Enable a room owner to configure conference-related aspects of the room, such as the supported media types (audio only, audio and video, etc.), via &xep0050;.</li>
+    <li>Enable a privileged user to perform common conference-related administrative actions (e.g., start and stop recording, mute and unmute participants) via ad-hoc commands.</li>
+    <li>Enable a client to discover whether a room supports multimedia extensions via &xep0030;.</li>
+    <li>Enable a room to discover whether a client supports multimedia MUC via &xep0115;.</li>
+    <li>Enable a room to inform participants about events of interest within the conference (e.g., addition of a new media type or the starting/stopping of recording) via &xep0316;.</li>
+  </ul>
+  <p>Because this specification uses Multi-User Chat (MUC) as the basis for multimedia interactions, we call it "Multimedia MUC" or MMUC for short.</p>
+</section1>
+<section1 topic='Use Cases' anchor='usecases'>
+  <section2 topic='Discovery' anchor='disco'>
+    <p>Support for this specification is advertised through a &xep0030; feature of "urn:xmpp:mmuc:0".</p>
+    <p>The associated service discovery identity for an MMUC room is "conference/multimedia".</p>
+  </section2>
+  <section2 topic='Join Room' anchor='join'>
+    <p>A user's client joins an MMUC room in the same way as it joins a normal MUC room. In order for the room to determine that the client is capable of multimedia interactions, the client MUST advertise support for a service discovery feature of "urn:xmpp:mmuc:0". The most convenient way to do this is for the client to factor "urn:xmpp:mmuc:0" into its &xep0115; calculation and include that Entity Capabilities hash in the directed presence stanza it sends when joining the room.</p>
+    <example caption='MMUC Client Joins Room'><![CDATA[
+<presence
+    from='juliet@capulet.example/web'
+    id='hxb2648k'
+    to='orchard@conference.shakespeare.example/Juli'>
+  <c xmlns='http://jabber.org/protocol/caps' 
+     hash='sha-1'
+     node='https://apps.example/convo'
+     ver='d31+CpgDvzWFVSYJABvjPTFOHxE='/>
+</presence>
+    ]]></example>
+  </section2>
+  <section2 topic='Provisioning Channels' anchor='channels'>
+    <p>When an MMUC client joins, the room might need to provision RTP/RTCP port pairs (a.k.a. "channels") from a media bridge. This is typically necessary for conferences with more than a few participants, since the bridge acts as a selective forwarding unit (SFU) enabling clients to receive only one media stream inbound instead of one per participant (thus saving the device from having to decode multiple streams). In MMUC this is done using the COLIBRI protocol.</p>
+    <p>Although the COLIBRI interactions are mostly out of scope for MMUC, there is one result of COLIBRI that is very useful in MMUC: the ability to associate a given media stream with a specific participant in the room (e.g., to enable so-called "active speaker" functionality). The information of interest here is the media stream identifier (see &msid; and &xep0339;) along other source-specific data such as the synchronization source ("SSRC") and in some cases the SDP Canonical End-Point Identifier ("CNAME").  The room will typically obtain this information from the media bridge, and it can then add the information to the in-room presence notifications that it sends on behalf of each participant</p>
+    <p>FIXME fippo what do you think about the following format??</p>
+    <example caption='Room Adds Media Source Information to In-Room Presence'><![CDATA[
+<presence
+    from='juliet@capulet.example/web'
+    id='hxb2648k'
+    to='orchard@conference.shakespeare.example/Juli'>
+  <c xmlns='http://jabber.org/protocol/caps' 
+     hash='sha-1'
+     node='https://apps.example/convo'
+     ver='d31+CpgDvzWFVSYJABvjPTFOHxE='/>
+  <source xmlns='urn:xmpp:mediasource:0'>
+    <cname>Yv/wvbCdsDW2Prgd</cname>
+    <msid>MLTJKIHilGn71fNQoszkQ4jlPTuS5vJyKVIv</msid>
+    <ssrc>1656081975</ssrc>
+  </source>
+</presence>
+    ]]></example>
+  </section2>
+  <section2 topic='Initiate Jingle Session' anchor='initiate'>
+    <p>After an MMUC client joins the room (and optionally the room obtains channels from the media bridge), the room sends a Jingle invitation to the client so that it can participate in the multimedia aspects of the conference.</p>
+  </section2>
+  <section2 topic='Configure Room' anchor='configure'>
+  </section2>
+  <section2 topic='Start and Stop Recording' anchor='recording'>
+  </section2>
+  <section2 topic='Mute and Unmute Participants' anchor='mute'>
+  </section2>
+</section1>
+<section1 topic='Open Issues' anchor='issues'>
+  <p>The following issues remain to be closed:</p>
+  <ul>
+    <li>Whether to use mediastreams or SSRCs in communication with the COLIBRI endpoint and in in-room presence.</li>
+  </ul>
+</section1>
+<section1 topic='Security Considerations' anchor='security'>
+  <p>To follow.</p>
+</section1>
+<section1 topic='IANA Considerations' anchor='iana'>
+  <p>This document requires no interaction with &IANA;.</p>
+</section1>
+<section1 topic='XMPP Registrar Considerations' anchor='registrar'>
+  <section2 topic='Protocol Namespaces' anchor='registrar-ns'>
+    <p>This specification defines the following XML namespace:</p>
+    <ul>
+      <li>urn:xmpp:jingle:mmuc:0</li>
+    </ul>
+    <p>The &REGISTRAR; includes the foregoing namespace to the registry located at &NAMESPACES;, as described in Section 4 of &xep0053;.</p>
+  </section2>
+  <section2 topic='Protocol Versioning' anchor='registrar-versioning'>
+    &NSVER;
+  </section2>
+  <section2 topic='Service Discovery Category/Type' anchor='registrar-discocat'>
+    <p>Within XMPP Service Discovery, a conference focus is identified by a category of "conference" and a type of "multimedia".</p>
+  </section2>
+</section1>
+<section1 topic='XML Schema' anchor='schema'>
+  <p>There is no schema for Multimedia MUC, since the namespace is used only as a Service Discovery feature..</p>
+</section1>
+<section1 topic='Acknowledgements' anchor='acks'>
+</section1>
+</xep>

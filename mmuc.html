@@ -1,0 +1,137 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>XEP-xxxx: Multimedia MUC</title><link rel="stylesheet" type="text/css" href="../xmpp.css" /><link href="../prettify.css" type="text/css" rel="stylesheet" /><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" /><script type="text/javascript" src="../prettify.js"></script><meta name="viewport" content="width=device-width; initial-scale=1.0; maximum-scale=2.0" /><meta name="DC.Title" content="Multimedia MUC" /><meta name="DC.Creator" content="Peter Saint-Andre" /><meta name="DC.Creator" content="Philipp Hancke" /><meta name="DC.Description" content="This specification defines how a Multi-User Chat (MUC) room can act as a multiparty signalling context (also known as a &quot;conference focus&quot;) for Jingle multimedia sessions." /><meta name="DC.Publisher" content="XMPP Standards Foundation" /><meta name="DC.Contributor" content="XMPP Extensions Editor" /><meta name="DC.Date" content="2014-09-03" /><meta name="DC.Type" content="XMPP Extension Protocol" /><meta name="DC.Format" content="XHTML" /><meta name="DC.Identifier" content="XEP-xxxx" /><meta name="DC.Language" content="en" /><meta name="DC.Rights" content="This XMPP Extension Protocol is copyright &#xA9; 1999 - 2014 by the XMPP Standards Foundation (XSF)." /></head><body onload="prettyPrint()"><h1>XEP-xxxx: Multimedia MUC</h1><table><tr valign="top"><td><strong>Abstract:</strong></td><td>This specification defines how a Multi-User Chat (MUC) room can act as a multiparty signalling context (also known as a "conference focus") for Jingle multimedia sessions.</td></tr><tr valign="top"><td><strong>Authors:</strong></td><td>Peter Saint-Andre, Philipp Hancke</td></tr><tr valign="top"><td><strong>Copyright:</strong></td><td>© 1999 - 2014 XMPP Standards Foundation. <a href="#appendix-legal">SEE LEGAL NOTICES</a>.</td></tr><tr valign="top"><td><strong>Status:</strong></td><td>ProtoXEP</td></tr><tr valign="top"><td><strong>Type:</strong></td><td>Standards Track</td></tr><tr valign="top"><td><strong>Version:</strong></td><td>0.0.1</td></tr><tr valign="top"><td><strong>Last Updated:</strong></td><td>2014-09-03</td></tr></table><hr /><p style="color:red">WARNING: This document has not yet been accepted for consideration or approved in any official manner by the XMPP Standards Foundation, and this document is not yet an XMPP Extension Protocol (XEP). If this document is accepted as a XEP by the XMPP Council, it will be published at &lt;<a href="http://xmpp.org/extensions/">http://xmpp.org/extensions/</a>&gt; and announced on the &lt;standards@xmpp.org&gt; mailing list.</p><hr /><h2>Table of Contents</h2><div class="indent"><p><br />1.  <a href="#intro">Introduction</a><br />2.  <a href="#usecases">Use Cases</a><br />   
+      2.1.  <a href="#disco">Discovery</a><br />   
+      2.2.  <a href="#join">Join Room</a><br />   
+      2.3.  <a href="#channels">Provisioning Channels</a><br />   
+      2.4.  <a href="#initiate">Initiate Jingle Session</a><br />   
+      2.5.  <a href="#configure">Configure Room</a><br />   
+      2.6.  <a href="#recording">Start and Stop Recording</a><br />   
+      2.7.  <a href="#mute">Mute and Unmute Participants</a><br />3.  <a href="#issues">Open Issues</a><br />4.  <a href="#security">Security Considerations</a><br />5.  <a href="#iana">IANA Considerations</a><br />6.  <a href="#registrar">XMPP Registrar Considerations</a><br />   
+      6.1.  <a href="#registrar-ns">Protocol Namespaces</a><br />   
+      6.2.  <a href="#registrar-versioning">Protocol Versioning</a><br />   
+      6.3.  <a href="#registrar-discocat">Service Discovery Category/Type</a><br />7.  <a href="#schema">XML Schema</a><br />8.  <a href="#acks">Acknowledgements</a></p><p><a href="#appendices">Appendices</a><br />    <a href="#appendix-docinfo">A: Document Information</a><br />    <a href="#appendix-authorinfo">B: Author Information</a><br />    <a href="#appendix-legal">C: Legal Notices</a><br />    <a href="#appendix-xmpp">D: Relation to XMPP</a><br />    <a href="#appendix-discuss">E: Discussion Venue</a><br />    <a href="#appendix-conformance">F: Requirements Conformance</a><br />    <a href="#appendix-notes">G: Notes</a><br />    <a href="#appendix-revs">H: Revision History</a></p></div><hr /><h2>1.
+       <a name="intro" id="intro">Introduction</a></h2>
+  <p class="" style="">The Jingle extensions to XMPP provide a method for managing a multimedia session (e.g., a voice and video call) between two participants. However, by itself Jingle does not support multiparty signaling. This document describes a way to use a groupchat room as a multiparty communications context (also known as a "conference focus") for Jingle signaling and related functionality.</p>
+  <p class="" style="">In particular, this specification was developed with the following goals in mind:</p>
+  <ul class="" style="">
+    <li class="" style="">Enable a room to function as a conference focus by initiating media sessions with participants via <span class="ref" style=""><a href="http://xmpp.org/extensions/xep-0166.html">Jingle (XEP-0166)</a></span>  [<a href="#nt-idm243766565200">1</a>].</li>
+    <li class="" style="">Enable a room to coordinate with a media bridge to provision channels (RTP/RTCP port pairs) for video traffic via <span class="ref" style=""><a href="http://xmpp.org/extensions/xep-0166.html">Jingle (XEP-0166)</a></span>  [<a href="#nt-idm243766567200">2</a>].</li>
+    <li class="" style="">Enable a room to advertise a participant's media streams via in-room presence so that other participants can associate any given stream with the sending participant.</li>
+    <li class="" style="">Enable a room owner to configure conference-related aspects of the room, such as the supported media types (audio only, audio and video, etc.), via <span class="ref" style=""><a href="http://xmpp.org/extensions/xep-0050.html">Ad-Hoc Commands (XEP-0050)</a></span>  [<a href="#nt-idm243766555024">3</a>].</li>
+    <li class="" style="">Enable a privileged user to perform common conference-related administrative actions (e.g., start and stop recording, mute and unmute participants) via ad-hoc commands.</li>
+    <li class="" style="">Enable a client to discover whether a room supports multimedia extensions via <span class="ref" style=""><a href="http://xmpp.org/extensions/xep-0030.html">Service Discovery (XEP-0030)</a></span>  [<a href="#nt-idm243766548272">4</a>].</li>
+    <li class="" style="">Enable a room to discover whether a client supports multimedia MUC via <span class="ref" style=""><a href="http://xmpp.org/extensions/xep-0115.html">Entity Capabilities (XEP-0115)</a></span>  [<a href="#nt-idm243766542560">5</a>].</li>
+    <li class="" style="">Enable a room to inform participants about events of interest within the conference (e.g., addition of a new media type or the starting/stopping of recording) via <span class="ref" style=""><a href="http://xmpp.org/extensions/xep-0316.html">MUC Eventing Protocol (XEP-0316)</a></span>  [<a href="#nt-idm243766536736">6</a>].</li>
+  </ul>
+  <p class="" style="">Because this specification uses Multi-User Chat (MUC) as the basis for multimedia interactions, we call it "Multimedia MUC" or MMUC for short.</p>
+<h2>2.
+       <a name="usecases" id="usecases">Use Cases</a></h2>
+  <div class="indent"><h3>2.1 <a name="disco" id="disco">Discovery</a></h3>
+    <p class="" style="">Support for this specification is advertised through a <span class="ref" style=""><a href="http://xmpp.org/extensions/xep-0030.html">Service Discovery (XEP-0030)</a></span>  [<a href="#nt-idm243766550528">7</a>] feature of "urn:xmpp:mmuc:0".</p>
+    <p class="" style="">The associated service discovery identity for an MMUC room is "conference/multimedia".</p>
+  </div>
+  <div class="indent"><h3>2.2 <a name="join" id="join">Join Room</a></h3>
+    <p class="" style="">A user's client joins an MMUC room in the same way as it joins a normal MUC room. In order for the room to determine that the client is capable of multimedia interactions, the client MUST advertise support for a service discovery feature of "urn:xmpp:mmuc:0". The most convenient way to do this is for the client to factor "urn:xmpp:mmuc:0" into its <span class="ref" style=""><a href="http://xmpp.org/extensions/xep-0115.html">Entity Capabilities (XEP-0115)</a></span>  [<a href="#nt-idm243766544800">8</a>] calculation and include that Entity Capabilities hash in the directed presence stanza it sends when joining the room.</p>
+    <p class="caption"><a name="example-1" id="example-1"></a>Example 1. MMUC Client Joins Room</p><div class="indent"><pre class="prettyprint">
+&lt;presence
+    from='juliet@capulet.example/web'
+    id='hxb2648k'
+    to='orchard@conference.shakespeare.example/Juli'&gt;
+  &lt;c xmlns='http://jabber.org/protocol/caps' 
+     hash='sha-1'
+     node='https://apps.example/convo'
+     ver='d31+CpgDvzWFVSYJABvjPTFOHxE='/&gt;
+&lt;/presence&gt;
+    </pre></div>
+  </div>
+  <div class="indent"><h3>2.3 <a name="channels" id="channels">Provisioning Channels</a></h3>
+    <p class="" style="">When an MMUC client joins, the room might need to provision RTP/RTCP port pairs (a.k.a. "channels") from a media bridge. This is typically necessary for conferences with more than a few participants, since the bridge acts as a selective forwarding unit (SFU) enabling clients to receive only one media stream inbound instead of one per participant (thus saving the device from having to decode multiple streams). In MMUC this is done using the COLIBRI protocol.</p>
+    <p class="" style="">Although the COLIBRI interactions are mostly out of scope for MMUC, there is one result of COLIBRI that is very useful in MMUC: the ability to associate a given media stream with a specific participant in the room (e.g., to enable so-called "active speaker" functionality). The information of interest here is the media stream identifier (see <span class="ref" style=""><a href="https://datatracker.ietf.org/doc/draft-ietf-mmusic-msid/">WebRTC MediaStream Identification in the Session Description Protocol</a></span>  [<a href="#nt-idm243766515808">9</a>] and <span class="ref" style=""><a href="http://xmpp.org/extensions/xep-0339.html">Source-Specific Media Attributes in Jingle (XEP-0339)</a></span>  [<a href="#nt-idm243766510688">10</a>]) along other source-specific data such as the synchronization source ("SSRC") and in some cases the SDP Canonical End-Point Identifier ("CNAME").  The room will typically obtain this information from the media bridge, and it can then add the information to the in-room presence notifications that it sends on behalf of each participant</p>
+    <p class="" style="">FIXME fippo what do you think about the following format??</p>
+    <p class="caption"><a name="example-2" id="example-2"></a>Example 2. Room Adds Media Source Information to In-Room Presence</p><div class="indent"><pre class="prettyprint">
+&lt;presence
+    from='juliet@capulet.example/web'
+    id='hxb2648k'
+    to='orchard@conference.shakespeare.example/Juli'&gt;
+  &lt;c xmlns='http://jabber.org/protocol/caps' 
+     hash='sha-1'
+     node='https://apps.example/convo'
+     ver='d31+CpgDvzWFVSYJABvjPTFOHxE='/&gt;
+  &lt;source xmlns='urn:xmpp:mediasource:0'&gt;
+    &lt;cname&gt;Yv/wvbCdsDW2Prgd&lt;/cname&gt;
+    &lt;msid&gt;MLTJKIHilGn71fNQoszkQ4jlPTuS5vJyKVIv&lt;/msid&gt;
+    &lt;ssrc&gt;1656081975&lt;/ssrc&gt;
+  &lt;/source&gt;
+&lt;/presence&gt;
+    </pre></div>
+  </div>
+  <div class="indent"><h3>2.4 <a name="initiate" id="initiate">Initiate Jingle Session</a></h3>
+    <p class="" style="">After an MMUC client joins the room (and optionally the room obtains channels from the media bridge), the room sends a Jingle invitation to the client so that it can participate in the multimedia aspects of the conference.</p>
+  </div>
+  <div class="indent"><h3>2.5 <a name="configure" id="configure">Configure Room</a></h3>
+  </div>
+  <div class="indent"><h3>2.6 <a name="recording" id="recording">Start and Stop Recording</a></h3>
+  </div>
+  <div class="indent"><h3>2.7 <a name="mute" id="mute">Mute and Unmute Participants</a></h3>
+  </div>
+<h2>3.
+       <a name="issues" id="issues">Open Issues</a></h2>
+  <p class="" style="">The following issues remain to be closed:</p>
+  <ul class="" style="">
+    <li class="" style="">Whether to use mediastreams or SSRCs in communication with the COLIBRI endpoint and in in-room presence.</li>
+  </ul>
+<h2>4.
+       <a name="security" id="security">Security Considerations</a></h2>
+  <p class="" style="">To follow.</p>
+<h2>5.
+       <a name="iana" id="iana">IANA Considerations</a></h2>
+  <p class="" style="">This document requires no interaction with the <span class="ref" style=""><a href="http://www.iana.org/">Internet Assigned Numbers Authority (IANA)</a></span>  [<a href="#nt-idm243766491296">11</a>].</p>
+<h2>6.
+       <a name="registrar" id="registrar">XMPP Registrar Considerations</a></h2>
+  <div class="indent"><h3>6.1 <a name="registrar-ns" id="registrar-ns">Protocol Namespaces</a></h3>
+    <p class="" style="">This specification defines the following XML namespace:</p>
+    <ul class="" style="">
+      <li class="" style="">urn:xmpp:jingle:mmuc:0</li>
+    </ul>
+    <p class="" style="">The <span class="ref" style=""><a href="http://xmpp.org/registrar/">XMPP Registrar</a></span>  [<a href="#nt-idm243766480864">12</a>] includes the foregoing namespace to the registry located at &lt;<a href="http://xmpp.org/registrar/namespaces.html">http://xmpp.org/registrar/namespaces.html</a>&gt;, as described in Section 4 of <span class="ref" style=""><a href="http://xmpp.org/extensions/xep-0053.html">XMPP Registrar Function (XEP-0053)</a></span>  [<a href="#nt-idm243766473840">13</a>].</p>
+  </div>
+  <div class="indent"><h3>6.2 <a name="registrar-versioning" id="registrar-versioning">Protocol Versioning</a></h3>
+    <p class="" style="">If the protocol defined in this specification undergoes a revision that is not fully backwards-compatible with an older version, the XMPP Registrar shall increment the protocol version number found at the end of the XML namespaces defined herein, as described in Section 4 of <span class="ref">XEP-0053</span>.</p>
+  </div>
+  <div class="indent"><h3>6.3 <a name="registrar-discocat" id="registrar-discocat">Service Discovery Category/Type</a></h3>
+    <p class="" style="">Within XMPP Service Discovery, a conference focus is identified by a category of "conference" and a type of "multimedia".</p>
+  </div>
+<h2>7.
+       <a name="schema" id="schema">XML Schema</a></h2>
+  <p class="" style="">There is no schema for Multimedia MUC, since the namespace is used only as a Service Discovery feature..</p>
+<h2>8.
+       <a name="acks" id="acks">Acknowledgements</a></h2>
+<hr /><a name="appendices" id="appendices"></a><h2>Appendices</h2><hr /><a name="appendix-docinfo" id="appendix-docinfo"></a><h3>Appendix A: Document Information</h3><p class="indent">
+            Series: <a href="http://xmpp.org/extensions/">XEP</a><br />
+            Number: xxxx<br />
+            Publisher: <a href="/xsf/">XMPP Standards Foundation</a><br />
+            Status: 
+            <a href="http://xmpp.org/extensions/xep-0001.html#states-ProtoXEP">ProtoXEP</a><br />
+            Type:
+            <a href="http://xmpp.org/extensions/xep-0001.html#types-Standards Track">Standards Track</a><br />
+            Version: 0.0.1<br />
+            Last Updated: 2014-09-03<br />
+                Approving Body: <a href="http://xmpp.org/council/">XMPP Council</a><br />Dependencies: XEP-0045, XEP-0166<br />
+                Supersedes: None<br />
+                Superseded By: None<br />
+            Short Name: mmuc<br />
+            This document in other formats: 
+                <a class="standardsButton" href="http://xmpp.org/extensions/xep-xxxx.xml">XML</a> 
+                <a class="standardsButton" href="http://xmpp.org/extensions/xep-xxxx.pdf">PDF</a></p><hr /><a name="appendix-authorinfo" id="appendix-authorinfo"></a><h3>Appendix B: Author Information</h3><div class="indent"><h3>Peter Saint-Andre</h3><p class="indent">
+        Email:
+        <a href="mailto:peter@andyet.net">peter@andyet.net</a><br />
+        JabberID: 
+        <a href="xmpp:stpeter@stpeter.im">stpeter@stpeter.im</a><br />
+        URI: 
+        <a href="https://stpeter.im/">https://stpeter.im/</a><br /></p><h3>Philipp Hancke</h3><p class="indent">
+        Email:
+        <a href="mailto:fippo@andyet.com">fippo@andyet.com</a><br />
+        JabberID: 
+        <a href="xmpp:fippo@goodadvice.pages.de">fippo@goodadvice.pages.de</a><br /></p></div><hr /><a name="appendix-legal" id="appendix-legal"></a><h3>Appendix C: Legal Notices</h3><div class="indent"><h4>Copyright</h4>This XMPP Extension Protocol is copyright © 1999 - 2014 by the <a href="http://xmpp.org/">XMPP Standards Foundation</a> (XSF).<h4>Permissions</h4>Permission is hereby granted, free of charge, to any person obtaining a copy of this specification (the "Specification"), to make use of the Specification without restriction, including without limitation the rights to implement the Specification in a software program, deploy the Specification in a network service, and copy, modify, merge, publish, translate, distribute, sublicense, or sell copies of the Specification, and to permit persons to whom the Specification is furnished to do so, subject to the condition that the foregoing copyright notice and this permission notice shall be included in all copies or substantial portions of the Specification. Unless separate permission is granted, modified works that are redistributed shall not contain misleading information regarding the authors, title, number, or publisher of the Specification, and shall not claim endorsement of the modified works by the authors, any organization or project to which the authors belong, or the XMPP Standards Foundation.<h4>Disclaimer of Warranty</h4><span style="font-weight: bold">## NOTE WELL: This Specification is provided on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, express or implied, including, without limitation, any warranties or conditions of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A PARTICULAR PURPOSE. ##</span><h4>Limitation of Liability</h4>In no event and under no legal theory, whether in tort (including negligence), contract, or otherwise, unless required by applicable law (such as deliberate and grossly negligent acts) or agreed to in writing, shall the XMPP Standards Foundation or any author of this Specification be liable for damages, including any direct, indirect, special, incidental, or consequential damages of any character arising from, out of, or in connection with the Specification or the implementation, deployment, or other use of the Specification (including but not limited to damages for loss of goodwill, work stoppage, computer failure or malfunction, or any and all other commercial damages or losses), even if the XMPP Standards Foundation or such author has been advised of the possibility of such damages.<h4>IPR Conformance</h4>This XMPP Extension Protocol has been contributed in full conformance with the XSF's Intellectual Property Rights Policy (a copy of which can be found at &lt;<a href="http://xmpp.org/about-xmpp/xsf/xsf-ipr-policy/">http://xmpp.org/about-xmpp/xsf/xsf-ipr-policy/</a>&gt; or obtained by writing to XMPP Standards Foundation, 1899 Wynkoop Street, Suite 600, Denver, CO 80202 USA).</div><hr /><a name="appendix-xmpp" id="appendix-xmpp"></a><h3>Appendix D: Relation to XMPP</h3><p class="indent">The Extensible Messaging and Presence Protocol (XMPP) is defined in the XMPP Core (RFC 6120) and XMPP IM (RFC 6121) specifications contributed by the XMPP Standards Foundation to the Internet Standards Process, which is managed by the Internet Engineering Task Force in accordance with RFC 2026. Any protocol defined in this document has been developed outside the Internet Standards Process and is to be understood as an extension to XMPP rather than as an evolution, development, or modification of XMPP itself.</p><hr /><a name="appendix-discuss" id="appendix-discuss"></a><h3>Appendix E: Discussion Venue</h3><p class="indent">The primary venue for discussion of XMPP Extension Protocols is the &lt;<a href="http://mail.jabber.org/mailman/listinfo/standards">standards@xmpp.org</a>&gt; discussion list.</p><p class="indent">Discussion on other xmpp.org discussion lists might also be appropriate; see &lt;<a href="http://xmpp.org/about/discuss.shtml">http://xmpp.org/about/discuss.shtml</a>&gt; for a complete list.</p><p class="indent">Errata can be sent to &lt;<a href="mailto:editor@xmpp.org">editor@xmpp.org</a>&gt;.</p><hr /><a name="appendix-conformance" id="appendix-conformance"></a><h3>Appendix F: Requirements Conformance</h3><p class="indent">The following requirements keywords as used in this document are to be interpreted as described in <a href="http://www.ietf.org/rfc/rfc2119.txt">RFC 2119</a>: "MUST", "SHALL", "REQUIRED"; "MUST NOT", "SHALL NOT"; "SHOULD", "RECOMMENDED"; "SHOULD NOT", "NOT RECOMMENDED"; "MAY", "OPTIONAL".</p><hr /><a name="appendix-notes" id="appendix-notes"></a><h3>Appendix G: Notes</h3><div class="indent"><p><a name="nt-idm243766565200" id="nt-idm243766565200">1</a>. XEP-0166: Jingle &lt;<a href="http://xmpp.org/extensions/xep-0166.html">http://xmpp.org/extensions/xep-0166.html</a>&gt;.</p><p><a name="nt-idm243766567200" id="nt-idm243766567200">2</a>. XEP-0166: Jingle &lt;<a href="http://xmpp.org/extensions/xep-0166.html">http://xmpp.org/extensions/xep-0166.html</a>&gt;.</p><p><a name="nt-idm243766555024" id="nt-idm243766555024">3</a>. XEP-0050: Ad-Hoc Commands &lt;<a href="http://xmpp.org/extensions/xep-0050.html">http://xmpp.org/extensions/xep-0050.html</a>&gt;.</p><p><a name="nt-idm243766548272" id="nt-idm243766548272">4</a>. XEP-0030: Service Discovery &lt;<a href="http://xmpp.org/extensions/xep-0030.html">http://xmpp.org/extensions/xep-0030.html</a>&gt;.</p><p><a name="nt-idm243766542560" id="nt-idm243766542560">5</a>. XEP-0115: Entity Capabilities &lt;<a href="http://xmpp.org/extensions/xep-0115.html">http://xmpp.org/extensions/xep-0115.html</a>&gt;.</p><p><a name="nt-idm243766536736" id="nt-idm243766536736">6</a>. XEP-0316: MUC Eventing Protocol &lt;<a href="http://xmpp.org/extensions/xep-0316.html">http://xmpp.org/extensions/xep-0316.html</a>&gt;.</p><p><a name="nt-idm243766550528" id="nt-idm243766550528">7</a>. XEP-0030: Service Discovery &lt;<a href="http://xmpp.org/extensions/xep-0030.html">http://xmpp.org/extensions/xep-0030.html</a>&gt;.</p><p><a name="nt-idm243766544800" id="nt-idm243766544800">8</a>. XEP-0115: Entity Capabilities &lt;<a href="http://xmpp.org/extensions/xep-0115.html">http://xmpp.org/extensions/xep-0115.html</a>&gt;.</p><p><a name="nt-idm243766515808" id="nt-idm243766515808">9</a>. WebRTC MediaStream Identification in the Session Description Protocol &lt;<a href="https://datatracker.ietf.org/doc/draft-ietf-mmusic-msid/">https://datatracker.ietf.org/doc/draft-ietf-mmusic-msid/</a>&gt;. Work in progress.</p><p><a name="nt-idm243766510688" id="nt-idm243766510688">10</a>. XEP-0339: Source-Specific Media Attributes in Jingle &lt;<a href="http://xmpp.org/extensions/xep-0339.html">http://xmpp.org/extensions/xep-0339.html</a>&gt;.</p><p><a name="nt-idm243766491296" id="nt-idm243766491296">11</a>. The Internet Assigned Numbers Authority (IANA) is the central coordinator for the assignment of unique parameter values for Internet protocols, such as port numbers and URI schemes. For further information, see &lt;<a href="http://www.iana.org/">http://www.iana.org/</a>&gt;.</p><p><a name="nt-idm243766480864" id="nt-idm243766480864">12</a>. The XMPP Registrar maintains a list of reserved protocol namespaces as well as registries of parameters used in the context of XMPP extension protocols approved by the XMPP Standards Foundation. For further information, see &lt;<a href="http://xmpp.org/registrar/">http://xmpp.org/registrar/</a>&gt;.</p><p><a name="nt-idm243766473840" id="nt-idm243766473840">13</a>. XEP-0053: XMPP Registrar Function &lt;<a href="http://xmpp.org/extensions/xep-0053.html">http://xmpp.org/extensions/xep-0053.html</a>&gt;.</p></div><hr /><a name="appendix-revs" id="appendix-revs"></a><h3>Appendix H: Revision History</h3><p>Note: Older versions of this specification might be available at <a href="http://xmpp.org/extensions/attic/">http://xmpp.org/extensions/attic/</a></p><div class="indent"><h4>Version 0.0.1 (2014-09-03)</h4><div class="indent"><p class="" style="">First draft.</p> (psa/ph)
+    </div></div><hr /><p>END</p></body></html>
